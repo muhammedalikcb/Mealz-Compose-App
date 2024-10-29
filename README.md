@@ -27,3 +27,120 @@ viewModelScope.launch {
     val meals = getMeals()
     mealState.value = meals
 }
+```
+
+
+This coroutine fetches meal data in a non-blocking way, updating mealState to display new data once it's available.
+
+## Dependency Injection (DI)
+To keep the codebase straightforward and easy to understand, the project does not use a DI framework like Hilt or Dagger. Instead, dependencies are created and managed manually, offering a simpler setup and reducing complexity for beginners.
+
+## Retrofit for Networking
+Retrofit is used to fetch data from a remote API, with a Gson converter for JSON parsing. Integrating Retrofit with coroutines allows asynchronous calls to the API without callbacks, simplifying the networking code.
+
+```kotlin
+suspend fun getMeals(): MealsCategoriesResponse {
+    return webService.getMeals()
+}
+```
+
+
+## Testing Strategy
+The MealzApp includes unit tests to validate data processing and business logic in the ViewModel. This approach ensures that core functionalities work as expected.
+
+## Dynamic Data Fetching
+MealzApp dynamically fetches data from an external API to display a list of meal categories in the UI. This data retrieval is achieved through coroutines, enabling non-blocking operations for a smooth user experience.
+
+## Project Structure
+The project is organized into separate packages to promote modularity and readability:
+```
+com.makocabey.mealzapp
+├── data
+│   ├── api               # Network API interfaces
+│   ├── model             # Data models for API responses
+│   └── repository        # Data repository for API data
+├── ui
+│   ├── meals             # UI screens and ViewModel for displaying meal categories
+│   └── theme             # App theme configuration (colors, typography)
+├── utils                 # Utilities and helper classes
+└── MealzApp.kt           # Main application class
+```
+
+## Setup Instructions
+To run this project locally, follow these steps:
+
+- Clone the repository:
+```
+git clone https://github.com/makocabey/MealzApp.git
+```
+
+- Open the project in Android Studio.
+
+- Sync the project with Gradle files:
+
+- Android Studio should automatically handle dependencies and setup.
+- Run the application on an emulator or a physical device:
+
+- Ensure the device has an internet connection for the API data to load.
+
+
+## Dependencies
+The following libraries and tools are used in MealzApp:
+
+Jetpack Compose: androidx.compose.* (for UI building)
+Kotlin Coroutines: org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0 (for asynchronous operations)
+Retrofit: com.squareup.retrofit2:retrofit:2.9.0 (for network communication)
+Gson Converter: com.squareup.retrofit2:converter-gson:2.9.0 (for JSON parsing)
+Coil: io.coil-kt:coil-compose:1.4.0 (for image loading in Compose)
+AndroidX Libraries: Core KTX, AppCompat, Material, Lifecycle ViewModel, and LiveData
+Core Features
+Dynamic Meal Categories List
+The Meals Categories Screen displays a list of meal categories, each with an image and name, using Jetpack Compose's LazyColumn for efficient and smooth scrolling.
+
+## Sample Code for MealsCategoriesScreen
+```kotlint
+@Composable
+fun MealsCategoriesScreen(viewModel: MealsCategoriesViewModel = viewModel()) {
+    val meals = viewModel.mealState.value
+
+    LazyColumn(contentPadding = PaddingValues(16.dp)) {
+        items(meals) { meal ->
+            MealCategory(meal)
+        }
+    }
+}
+
+```
+
+## Detailed Meal Category Item
+Each meal category item is displayed in a Card component, with an image on the left and the meal name beside it. This layout uses Compose’s Row and Column for alignment and spacing.
+
+Sample Code for MealCategory
+```kotlin
+@Composable
+fun MealCategory(meal: MealResponse) {
+    Card(
+        shape = RoundedCornerShape(8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+    ) {
+        Row {
+            Image(
+                painter = rememberAsyncImagePainter(meal.imageUrl),
+                contentDescription = null,
+                modifier = Modifier.size(88.dp).padding(4.dp)
+            )
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(16.dp)
+            ) {
+                Text(text = meal.name, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+```
