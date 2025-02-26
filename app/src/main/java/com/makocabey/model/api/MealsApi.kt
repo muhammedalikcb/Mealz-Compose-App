@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 
 class MealsWebService {
-    private lateinit var api: MealsApi
+    private var api: MealsApi
 
     companion object {
         private const val BASE_URL = "https://www.themealdb.com/api/json/v1/1/"
