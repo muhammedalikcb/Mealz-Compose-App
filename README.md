@@ -1,26 +1,26 @@
-# MealzApp Project
+# MealzApp
 
-## Overview
+A small Android sample app that lists meal categories from [TheMealDB](https://www.themealdb.com/) API. It's built with Jetpack Compose, MVVM, Kotlin coroutines and Retrofit.
 
-The **MealzApp** project is a sample application designed to showcase essential Android development skills using modern technologies and architectural patterns. This project leverages **MVVM architecture**, **Kotlin Coroutines** for asynchronous processing, and **Jetpack Compose** for creating a dynamic and user-friendly UI. The application integrates **Retrofit** for efficient data fetching from an external API, following best practices for a modular, testable, and maintainable codebase.
+## What it does
 
-## Technologies and Architectural Patterns
+- Fetches meal categories from `https://www.themealdb.com/api/json/v1/1/categories.php` and shows them in a `LazyColumn`.
+- Each card shows the category image (loaded with Coil), its name, and a description you can expand or collapse with the arrow icon.
+- Tapping a card navigates to a detail screen with Navigation Compose. The detail screen is still a work in progress.
 
-### MVVM (Model-View-ViewModel)
+## Architecture
 
-The **MVVM** pattern is implemented to separate the UI from business logic and data, enhancing code maintainability and modularity.
+The app uses MVVM to keep the UI separate from state and data.
 
-- **View**: The main UI is displayed in `MealsCategoriesScreen`, which shows meal categories in a scrollable list.
-- **ViewModel**: The `MealsCategoriesViewModel` class contains the core logic for fetching and processing data, serving as a bridge between the UI and the model.
-- **Model**: Data models like `MealResponse` represent the structure of the data fetched from the API, allowing for seamless data integration in the UI.
+- View: `MealsCategoriesScreen` shows the list of categories and `MealDetailScreen` shows a single one.
+- ViewModel: `MealsCategoriesViewModel` loads the categories and exposes them as Compose state. `MealDetailsViewModel` reads the selected category id from `SavedStateHandle`.
+- Model: `MealsRepository` wraps the Retrofit service (`MealsWebService`). `MealsCategoriesResponse` and `MealResponse` map the JSON.
 
-### Use Cases
+There is no separate use-case layer. The ViewModel calls the repository directly, which is enough for an app this size.
 
-While a formal use-case pattern is not applied here, the `MealsCategoriesViewModel` handles critical data-fetching tasks, maintaining a clean separation of responsibilities to ensure code simplicity and testability.
+### Coroutines
 
-### Coroutines for Asynchronous Data Fetching
-
-Kotlin Coroutines are used for asynchronous data fetching, ensuring smooth and responsive interactions within the UI. The `viewModelScope` in `MealsCategoriesViewModel` provides a lifecycle-aware coroutine scope that terminates automatically when the ViewModel is cleared.
+Data is loaded in `viewModelScope`, so the request is cancelled automatically when the ViewModel is cleared.
 
 ```kotlin
 viewModelScope.launch {
@@ -29,14 +29,15 @@ viewModelScope.launch {
 }
 ```
 
+When the response arrives, `mealState` is updated and Compose redraws the list.
 
-This coroutine fetches meal data in a non-blocking way, updating mealState to display new data once it's available.
+### Dependency injection
 
-## Dependency Injection (DI)
-To keep the codebase straightforward and easy to understand, the project does not use a DI framework like Hilt or Dagger. Instead, dependencies are created and managed manually, offering a simpler setup and reducing complexity for beginners.
+There's no DI framework like Hilt or Dagger. Dependencies are passed as constructor default parameters, for example `MealsCategoriesViewModel(repository: MealsRepository = MealsRepository())`. That keeps the setup easy to follow and still makes it simple to swap in a fake repository.
 
-## Retrofit for Networking
-Retrofit is used to fetch data from a remote API, with a Gson converter for JSON parsing. Integrating Retrofit with coroutines allows asynchronous calls to the API without callbacks, simplifying the networking code.
+### Networking
+
+Retrofit with the Gson converter. The API interface uses `suspend` functions, so calls run inside coroutines without callbacks.
 
 ```kotlin
 suspend fun getMeals(): MealsCategoriesResponse {
@@ -44,61 +45,56 @@ suspend fun getMeals(): MealsCategoriesResponse {
 }
 ```
 
+## Testing
 
-## Testing Strategy
-The MealzApp includes unit tests to validate data processing and business logic in the ViewModel. This approach ensures that core functionalities work as expected.
+Only the default template tests are in the project so far (`ExampleUnitTest` and `ExampleInstrumentedTest`). There are no ViewModel or repository tests yet.
 
-## Dynamic Data Fetching
-MealzApp dynamically fetches data from an external API to display a list of meal categories in the UI. This data retrieval is achieved through coroutines, enabling non-blocking operations for a smooth user experience.
+## Project structure
 
-## Project Structure
-The project is organized into separate packages to promote modularity and readability:
 ```
-com.makocabey.mealzapp
-├── data
-│   ├── api               # Network API interfaces
-│   ├── model             # Data models for API responses
-│   └── repository        # Data repository for API data
-├── ui
-│   ├── meals             # UI screens and ViewModel for displaying meal categories
-│   └── theme             # App theme configuration (colors, typography)
-├── utils                 # Utilities and helper classes
-└── MealzApp.kt           # Main application class
+app/src/main/java/com/makocabey
+├── mealzapp/ui
+│   ├── MainActivity.kt          # Activity and NavHost (list -> details)
+│   ├── meals                    # Categories screen and ViewModel
+│   ├── details                  # Detail screen and ViewModel
+│   └── theme                    # Colors, typography, theme
+└── model
+    ├── MealsRepository.kt       # Repository, caches the last fetched list
+    ├── api/MealsApi.kt          # Retrofit service and API interface
+    └── response/Responses.kt    # API response models
 ```
 
-## Setup Instructions
-To run this project locally, follow these steps:
+## Setup
 
-- Clone the repository:
-```
-git clone https://github.com/makocabey/MealzApp.git
-```
+1. Clone the repository:
+   ```
+   git clone https://github.com/muhammedalikcb/Mealz-Compose-App.git
+   ```
+2. Open the project in Android Studio and let Gradle sync. Dependencies are resolved automatically.
+3. Run it on an emulator or a physical device. The device needs an internet connection because all data comes from the API.
 
-- Open the project in Android Studio.
+Build settings: compileSdk and targetSdk 34, minSdk 25, Kotlin 1.9.0, Android Gradle Plugin 8.6.1.
 
-- Sync the project with Gradle files:
+## Dependencies
 
-- Android Studio should automatically handle dependencies and setup.
-- Run the application on an emulator or a physical device:
+Versions are defined in `gradle/libs.versions.toml`.
 
-- Ensure the device has an internet connection for the API data to load.
+- Jetpack Compose (BOM 2024.10.00) with Material 3
+- Navigation Compose 2.8.3
+- Lifecycle ViewModel Compose and Runtime KTX 2.8.6
+- Retrofit 2.11.0 with the Gson converter 2.11.0 (`com.squareup.retrofit2:retrofit`, `com.squareup.retrofit2:converter-gson`)
+- Coil 2.0.0 (`io.coil-kt:coil-compose`) for image loading
+- Wear Compose Material 1.4.0, used only for `ContentAlpha`
+- Kotlin coroutines, which come in through the AndroidX lifecycle libraries
+- AndroidX Core KTX 1.13.1 and Activity Compose 1.9.3
 
+## Code samples
 
-## Dependencies
-The following libraries and tools are used in MealzApp:
+These are simplified versions of the composables in `ui/meals/MealsCategoriesScreen.kt`. The real screen also takes a navigation callback, and each card has the expandable description.
 
-Jetpack Compose: androidx.compose.* (for UI building)
-Kotlin Coroutines: org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0 (for asynchronous operations)
-Retrofit: com.squareup.retrofit2:retrofit:2.9.0 (for network communication)
-Gson Converter: com.squareup.retrofit2:converter-gson:2.9.0 (for JSON parsing)
-Coil: io.coil-kt:coil-compose:1.4.0 (for image loading in Compose)
-AndroidX Libraries: Core KTX, AppCompat, Material, Lifecycle ViewModel, and LiveData
-Core Features
-Dynamic Meal Categories List
-The Meals Categories Screen displays a list of meal categories, each with an image and name, using Jetpack Compose's LazyColumn for efficient and smooth scrolling.
+### MealsCategoriesScreen
 
-## Sample Code for MealsCategoriesScreen
-```kotlint
+```kotlin
 @Composable
 fun MealsCategoriesScreen(viewModel: MealsCategoriesViewModel = viewModel()) {
     val meals = viewModel.mealState.value
@@ -112,10 +108,10 @@ fun MealsCategoriesScreen(viewModel: MealsCategoriesViewModel = viewModel()) {
 
 ```
 
-## Detailed Meal Category Item
-Each meal category item is displayed in a Card component, with an image on the left and the meal name beside it. This layout uses Compose’s Row and Column for alignment and spacing.
+### MealCategory
 
-Sample Code for MealCategory
+Each category is a `Card` with the image on the left and the name next to it, laid out with `Row` and `Column`.
+
 ```kotlin
 @Composable
 fun MealCategory(meal: MealResponse) {
